@@ -6,6 +6,8 @@ function range(length) {
 
 WIDTH = 320
 HEIGHT = 240
+// WIDTH = 640
+// HEIGHT = 480
 
 var video = document.createElement('video')
 video.autoplay = true
@@ -28,12 +30,11 @@ displayCanvas.height = HEIGHT
 
 document.body.appendChild(displayCanvas)
 
-setInterval(draw, 2000)
+setInterval(draw, 8000)
 // setTimeout(draw, 2000)
 // draw()
 
-// var blurRadius = 3
-// 3x3 pixel blur
+var blurRadius = 5
 
 function getCornerPixel(data, x, y) {
   // return green for now
@@ -41,41 +42,41 @@ function getCornerPixel(data, x, y) {
 }
 
 function isCorner(x, y, width, height) {
-  return x - 1 < 0 || y - 1 < 0 || x + 1 >= width || y + 1 >= height
+  return x - blurRadius < 0 || y - blurRadius < 0 || x + blurRadius >= width || y + blurRadius >= height
 }
 
 function getIndex(x, y) {
   return (x + y * WIDTH) * 4
 }
 
+var coefficients1d = [.01, .06, .08, .12, .14, .28]
+var reflection = coefficients1d.slice(0, blurRadius)
+reflection.reverse()
+var coefficients1dReflected = coefficients1d.concat(reflection)
+
+var coefficients = [].concat(...range(2*blurRadius + 1).map(x => {
+  return [].concat(...range(2*blurRadius + 1).map(y => {
+    return coefficients1dReflected[x] * coefficients1dReflected[y]
+  }))
+}))
+
 function getPixel(data, x, y) {
   // returns [red, green, blue]
-  // uses matrix .1 .8 .1 ->
-  // .01 .08 .01
-  // .08 .64 .08
-  // .01 .08 .01
   if (isCorner(x, y, WIDTH, HEIGHT)) {
     return getCornerPixel()
   } else {
+    var topLeft = [x - blurRadius, y - blurRadius]
+    var indices = [].concat(...range(2*blurRadius + 1).map(xoffset => {
+      return [].concat(range(2*blurRadius + 1).map(yoffset => {
+        return [topLeft[0] + xoffset, topLeft[1] + yoffset]
+      }))
+    }))
     return range(3).map(color => {
-      coefficients = [.01, .08, .01, .08, .64, .08, .01, .08, .01]
-      indices = [
-        [x - 1, y - 1],
-        [x, y - 1],
-        [x + 1, y - 1],
-        [x - 1, y],
-        [x, y],
-        [x + 1, y],
-        [x - 1, y + 1],
-        [x, y + 1],
-        [x + 1, y + 1],
-      ]
+
       return coefficients.reduce((total, coefficient, index) => {
         var [x, y] = indices[index]
         return total + coefficient * data[getIndex(x, y) + color]
       }, 0)
-      // return data[(x + y * WIDTH) * 4 + color]
-      // return data[(x + y * WIDTH) * 4] + color // grayscale lol
     })
   }
 }
