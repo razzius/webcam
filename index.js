@@ -30,8 +30,8 @@ displayCanvas.height = HEIGHT
 
 document.body.appendChild(displayCanvas)
 
-setInterval(draw, 8000)
-setTimeout(draw, 1000)
+setInterval(draw, 200)
+// setTimeout(draw, 1000)
 // draw()
 
 var blurRadius = 5
@@ -65,27 +65,38 @@ function getPixel(data, x, y) {
   if (isCorner(x, y, WIDTH, HEIGHT)) {
     return getCornerPixel()
   } else {
-    var topLeft = [x - blurRadius, y - blurRadius]
-    var indices = [].concat(...range(2*blurRadius + 1).map(xoffset => {
-      return [].concat(range(2*blurRadius + 1).map(yoffset => {
-        return [topLeft[0] + xoffset, topLeft[1] + yoffset]
-      }))
-    }))
-    return range(3).map(color => {
+    // var topLeft = [x - blurRadius, y - blurRadius]
+    // var indices = [].concat(...range(2*blurRadius + 1).map(xoffset => {
+    //   return [].concat(range(2*blurRadius + 1).map(yoffset => {
+    //     return [topLeft[0] + xoffset, topLeft[1] + yoffset]
+    //   }))
+    // }))
+    // return range(3).map(color => {
 
-      return coefficients.reduce((total, coefficient, index) => {
-        var [x, y] = indices[index]
-        return total + coefficient * data[getIndex(x, y) + color]
-      }, 0)
-    })
+    //   return coefficients.reduce((total, coefficient, index) => {
+    //     var [x, y] = indices[index]
+    //     return total + coefficient * data[getIndex(x, y) + color]
+    //   }, 0)
+    // })
+    var totals = [0, 0, 0]
+    for (var c = 0; c < 3; c++) {
+      var index = 0
+      for (var xo = -blurRadius; xo <= blurRadius; xo++) {
+        for (var yo = -blurRadius; yo <= blurRadius; yo++) {
+          totals[c] += data[((x + xo) + (y + yo) * WIDTH)*4 + c] * coefficients[index]
+          index++
+        }
+      }
+    }
+    return totals
   }
 }
 
 function processImage(data) {
   var output = new Uint8ClampedArray(WIDTH * HEIGHT * 4)
 
-  range(WIDTH).forEach(x => {
-    range(HEIGHT).forEach(y => {
+  for(var x = 0; x < WIDTH; x++) {
+    for(var y = 0; y < HEIGHT; y++) {
       var index = y * WIDTH + x
       var redIndex = index * 4
       var greenIndex = index * 4 + 1
@@ -98,8 +109,8 @@ function processImage(data) {
       output[greenIndex] = green
       output[blueIndex] = blue
       output[alphaIndex] = 255
-    })
-  })
+    }
+  }
 
   return output
 }
@@ -118,4 +129,4 @@ function draw() {
 // Not showing vendor prefixes.
 navigator.getUserMedia({video: true}, function(mediaStream) {
   video.src = window.URL.createObjectURL(mediaStream);
-}, alert);
+}, err => {debugger});
