@@ -6,8 +6,8 @@ function range(length) {
 
 WIDTH = 320
 HEIGHT = 240
-// WIDTH = 640
-// HEIGHT = 480
+// WIDTH = 160
+// HEIGHT = 120
 
 var video = document.createElement('video')
 video.autoplay = true
@@ -31,7 +31,7 @@ displayCanvas.height = HEIGHT
 document.body.appendChild(displayCanvas)
 
 setInterval(draw, 8000)
-// setTimeout(draw, 2000)
+setTimeout(draw, 1000)
 // draw()
 
 var blurRadius = 5
@@ -81,27 +81,8 @@ function getPixel(data, x, y) {
   }
 }
 
-function draw() {
-  context.drawImage(video, 0, 0, WIDTH, HEIGHT)
-  var imageData = context.getImageData(0, 0, WIDTH, HEIGHT)
-  var outputImage = displayContext.createImageData(WIDTH, HEIGHT)
-
-  var data = imageData.data
-
-  var pixels = data.width * data.height
-
-  // data.forEach(function(value, index) {
-  //   outputImage.data[index] = index % 4 === 3 ? 255 :
-  //     index % 4 === 1 ? value : 0
-  // })
-
-  // data.forEach(function(value, index) {
-  //   if (index % 4 === 0) {
-  //     outputImage.data[index] = value
-  //   } else {
-  //     outputImage.data[index] = 0
-  //   }
-  // })
+function processImage(data) {
+  var output = new Uint8ClampedArray(WIDTH * HEIGHT * 4)
 
   range(WIDTH).forEach(x => {
     range(HEIGHT).forEach(y => {
@@ -113,27 +94,28 @@ function draw() {
 
       var [red, green, blue] = getPixel(data, x, y)
 
-      outputImage.data[redIndex] = red
-      outputImage.data[greenIndex] = green
-      outputImage.data[blueIndex] = blue
-      outputImage.data[alphaIndex] = 255
+      output[redIndex] = red
+      output[greenIndex] = green
+      output[blueIndex] = blue
+      output[alphaIndex] = 255
     })
   })
 
-  displayContext.putImageData(outputImage, 0, 0)
-
+  return output
 }
 
-var errorCallback = function(e) {
-  console.log('Reeeejected!', e);
-};
+function draw() {
+  context.drawImage(video, 0, 0, WIDTH, HEIGHT)
+  var imageData = context.getImageData(0, 0, WIDTH, HEIGHT)
+
+  var data = imageData.data
+
+  var output = processImage(data)
+
+  displayContext.putImageData(new ImageData(output, WIDTH, HEIGHT), 0, 0)
+}
 
 // Not showing vendor prefixes.
-navigator.getUserMedia({video: true}, function(localMediaStream) {
-  var video = document.querySelector('video');
-  video.src = window.URL.createObjectURL(localMediaStream);
-
-  video.onloadedmetadata = function(e) {
-    // Ready to go. Do some stuff.
-  };
-}, errorCallback);
+navigator.getUserMedia({video: true}, function(mediaStream) {
+  video.src = window.URL.createObjectURL(mediaStream);
+}, alert);
