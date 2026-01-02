@@ -1,7 +1,5 @@
 function range(length) {
-  return Array.apply(null, Array(length)).map(
-    (_, i) => i
-  )
+  return Array.from({length}).map((_, i) => i)
 }
 
 WIDTH = 640
@@ -32,6 +30,18 @@ setInterval(draw, 160)
 // setTimeout(draw, 1000)
 // draw()
 
+var coefficients1d = [.01, .06, .08, .12, .14, .28]
+var blurRadius = coefficients1d.length - 1
+// var coefficients1d = [.01, .06, .27, .32]
+var reflection = coefficients1d.slice(0, blurRadius)
+reflection.reverse()
+var coefficients1dReflected = coefficients1d.concat(reflection)
+
+var coefficients = [].concat(...range(2*blurRadius + 1).map(x => {
+  return [].concat(...range(2*blurRadius + 1).map(y => {
+    return coefficients1dReflected[x] * coefficients1dReflected[y]
+  }))
+}))
 
 function getCornerPixel(data, x, y) {
   // return green for now
@@ -45,19 +55,6 @@ function isCorner(x, y, width, height) {
 function getIndex(x, y) {
   return (x + y * WIDTH) * 4
 }
-
-var coefficients1d = [.01, .06, .08, .12, .14, .28]
-var blurRadius = coefficients1d.length - 1
-// var coefficients1d = [.01, .06, .27, .32]
-var reflection = coefficients1d.slice(0, blurRadius)
-reflection.reverse()
-var coefficients1dReflected = coefficients1d.concat(reflection)
-
-var coefficients = [].concat(...range(2*blurRadius + 1).map(x => {
-  return [].concat(...range(2*blurRadius + 1).map(y => {
-    return coefficients1dReflected[x] * coefficients1dReflected[y]
-  }))
-}))
 
 function processImage(data) {
   var output = new Uint8ClampedArray(WIDTH * HEIGHT * 4)
@@ -114,6 +111,6 @@ function draw() {
 }
 
 // Not showing vendor prefixes.
-navigator.getUserMedia({video: true}, function(mediaStream) {
-  video.src = window.URL.createObjectURL(mediaStream);
+navigator.mediaDevices.getUserMedia({video: true}).then(function(mediaStream) {
+  video.srcObject = mediaStream;
 }, err => {debugger});
